@@ -237,6 +237,83 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         raise ValueError(f"Strumento sconosciuto: {name}")
 
 
+async def handle_set_project_directory(path: str) -> list[TextContent]:
+    """
+    Cambia il progetto corrente.
+
+    Args:
+        path: Percorso del nuovo progetto
+
+    Returns:
+        Conferma del cambiamento
+    """
+    global PROJECT_ROOT, db, linter
+
+    # Verifica che il path esista
+    if not os.path.exists(path):
+        return [TextContent(type="text", text=f"Errore: la directory {path} non esiste")]
+
+    if not os.path.isdir(path):
+        return [TextContent(type="text", text=f"Errore: {path} non è una directory")]
+
+    # Cambia PROJECT_ROOT
+    PROJECT_ROOT = os.path.abspath(path)
+
+    # Reinizializza linter con nuovo progetto
+    if LINTERS_AVAILABLE:
+        linter = CodeLinter(PROJECT_ROOT)
+
+    result = f"✓ Progetto cambiato: {PROJECT_ROOT}\n\n"
+
+    # Verifica se il progetto è indicizzato
+    if db:
+        files = await db.get_all_files()
+        if files:
+            result += f"Database: {len(files)} file indicizzati\n"
+            result += f"Database path: {db.db_path}\n\n"
+            result += "Puoi iniziare ad analizzare il progetto!"
+        else:
+            result += "⚠️  Progetto non ancora indicizzato.\n"
+            result += f"Esegui: mcp-index index --project {PROJECT_ROOT}"
+
+    return [TextContent(type="text", text=result)]
+
+
+async def handle_get_current_project() -> list[TextContent]:
+    """
+    Mostra il progetto corrente.
+
+    Returns:
+        Informazioni sul progetto corrente
+    """
+    result = f"Progetto corrente: {PROJECT_ROOT}\n\n"
+
+    # Info sul database
+    if db:
+        files = await db.get_all_files()
+        result += f"Database: {len(files)} file indicizzati\n"
+        result += f"Database path: {db.db_path}\n"
+
+        if files:
+            # Statistiche per linguaggio
+            languages = {}
+            for file in files:
+                lang = file.get('language', 'Unknown')
+                languages[lang] = languages.get(lang, 0) + 1
+
+            result += f"\nLinguaggi:\n"
+            for lang, count in sorted(languages.items(), key=lambda x: -x[1])[:5]:
+                result += f"  - {lang}: {count} file\n"
+
+    # Info sui linter disponibili
+    if linter:
+        tools = linter.get_available_tools()
+        if tools:
+            result += f"\nLinter disponibili: {', '.join(tools)}"
+
+    return [TextContent(type="text", text=result)]
+
+
 async def handle_list_files(pattern: Optional[str] = None) -> list[TextContent]:
     """
     Gestisce la richiesta di elenco file.

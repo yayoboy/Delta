@@ -47,7 +47,7 @@ Edita il file di configurazione per la tua piattaforma:
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-**Opzione 1 - Auto-detect (semplice):**
+**Configurazione Minima (Consigliata):**
 ```json
 {
   "mcpServers": {
@@ -58,21 +58,14 @@ Edita il file di configurazione per la tua piattaforma:
   }
 }
 ```
-Il server userà automaticamente la directory di lavoro corrente di Claude!
 
-**Opzione 2 - Progetto specifico:**
-```json
-{
-  "mcpServers": {
-    "codebase": {
-      "command": "mcp-codebase",
-      "args": [],
-      "env": {
-        "MCP_PROJECT_ROOT": "/path/to/your/project"
-      }
-    }
-  }
-}
+**Claude cambierà progetto dinamicamente quando richiesto!**
+
+Esempio d'uso:
+```
+User: Analizza il progetto in /Users/nome/progetti/app-frontend
+Claude: [usa set_project_directory con path=/Users/nome/progetti/app-frontend]
+Claude: ✓ Progetto cambiato! Ora analizzo app-frontend...
 ```
 
 **Riavvia Claude Desktop** - il server si avvia automaticamente!
@@ -81,6 +74,8 @@ Il server userà automaticamente la directory di lavoro corrente di Claude!
 
 | Strumento | Descrizione |
 |-----------|-------------|
+| `set_project_directory` | **Cambia progetto dinamicamente** - Claude sceglie su cosa lavorare |
+| `get_current_project` | Mostra progetto corrente e statistiche |
 | `list_files` | Elenca file con pattern matching |
 | `read_file` | Legge contenuto file |
 | `get_indexed_files` | Mostra file indicizzati con riassunti |
@@ -94,6 +89,19 @@ Il server userà automaticamente la directory di lavoro corrente di Claude!
 
 ## Esempi d'Uso con Claude
 
+**Cambiare progetto dinamicamente:**
+```
+User: Lavora sul progetto in /Users/nome/app-frontend
+→ Claude usa set_project_directory(path="/Users/nome/app-frontend")
+
+User: Quali file ci sono?
+→ Claude usa list_files()
+
+User: Ora passa al backend in /Users/nome/app-backend
+→ Claude usa set_project_directory(path="/Users/nome/app-backend")
+```
+
+**Analisi codice:**
 ```
 User: Mostrami tutti i file Python nel progetto
 → Claude usa list_files(pattern="*.py")
@@ -106,9 +114,6 @@ User: Trova file che gestiscono autenticazione
 
 User: Analizza il codice per errori
 → Claude usa lint_python()
-
-User: Mostrami la struttura di server.py
-→ Claude usa get_file_symbols(path="mcp_server/server.py")
 ```
 
 ## CLI Commands
@@ -203,18 +208,16 @@ python -m mcp_server.cli index --force
 
 ## Variabili d'Ambiente
 
-```bash
-# Progetto da analizzare (opzionale - usa cwd se non specificato)
-export MCP_PROJECT_ROOT=/path/to/project
+**Nessuna configurazione richiesta!** Claude cambia progetto dinamicamente.
 
+Opzionali per configurazione manuale:
+```bash
 # Database personalizzato (opzionale, default: ~/.mcp_codebase/)
 export MCP_DATABASE_PATH=/custom/path/db.sqlite
 
 # Modello embedding (opzionale, default: all-MiniLM-L6-v2)
 export MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2
 ```
-
-**Nota:** Se `MCP_PROJECT_ROOT` non è specificato, il server usa la directory corrente!
 
 ## Sicurezza
 
