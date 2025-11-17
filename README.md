@@ -19,9 +19,16 @@ Questo progetto implementa un server MCP in Python strutturato in 8 fasi progres
 - Aggiornamenti incrementali basati su hash
 - CLI per gestione indicizzazione
 
-### Fase 3-8: In sviluppo
-- Parsing del codice con tree-sitter
-- Ricerca semantica
+### Fase 3: Parsing del Codice ✅
+- Integrazione tree-sitter per analisi AST
+- Estrazione simboli (classi, funzioni, metodi)
+- Supporto per 9 linguaggi (Python, JS/TS, Java, C/C++, Go, Rust)
+- Relazioni tra simboli (chiamate, import, extends)
+- Docstring e firme delle funzioni
+- Gerarchia simboli (metodi → classi)
+
+### Fase 4-8: In sviluppo
+- Ricerca semantica avanzata
 - Analisi statica del codice
 - Integrazione con Claude Desktop/CLI
 - Documentazione completa

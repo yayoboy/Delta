@@ -18,6 +18,13 @@ from sentence_transformers import SentenceTransformer
 from .database import Database
 from .server import is_text_file, calculate_file_hash
 
+try:
+    from .parser import CodeParser
+    PARSER_AVAILABLE = True
+except ImportError:
+    PARSER_AVAILABLE = False
+    CodeParser = None
+
 
 class CodebaseIndexer:
     """Gestisce l'indicizzazione del codebase."""
@@ -40,6 +47,7 @@ class CodebaseIndexer:
         self.db = db
         self.model_name = model_name
         self.model: Optional[SentenceTransformer] = None
+        self.parser: Optional['CodeParser'] = None
 
         # Directory e file da escludere
         self.exclude_dirs = {
@@ -92,6 +100,17 @@ class CodebaseIndexer:
             print(f"Caricamento modello: {self.model_name}...")
             self.model = SentenceTransformer(self.model_name)
             print("Modello caricato.")
+
+    def load_parser(self):
+        """Carica il parser tree-sitter."""
+        if PARSER_AVAILABLE and not self.parser:
+            try:
+                print("Caricamento parser tree-sitter...")
+                self.parser = CodeParser()
+                print("Parser caricato.")
+            except Exception as e:
+                print(f"Avviso: impossibile caricare parser: {e}")
+                self.parser = None
 
     def detect_language(self, file_path: Path) -> Optional[str]:
         """
@@ -325,6 +344,49 @@ class CodebaseIndexer:
                     model_name=self.model_name
                 )
 
+                # Parse del codice per estrarre simboli
+                if self.parser and language:
+                    try:
+                        symbols, references = self.parser.parse_file(content, language)
+
+                        # Elimina simboli vecchi
+                        await self.db.delete_symbols_for_file(file_id)
+
+                        # Inserisci nuovi simboli
+                        symbol_map = {}  # Mappa nome -> ID per gestire parent_id
+                        for symbol in symbols:
+                            parent_id = None
+                            if symbol.parent_name and symbol.parent_name in symbol_map:
+                                parent_id = symbol_map[symbol.parent_name]
+
+                            symbol_id = await self.db.insert_symbol(
+                                file_id=file_id,
+                                name=symbol.name,
+                                kind=symbol.kind,
+                                start_line=symbol.start_line,
+                                end_line=symbol.end_line,
+                                start_col=symbol.start_col,
+                                end_col=symbol.end_col,
+                                docstring=symbol.docstring,
+                                signature=symbol.signature,
+                                parent_id=parent_id
+                            )
+
+                            symbol_map[symbol.name] = symbol_id
+
+                        # Inserisci referenze
+                        for ref in references:
+                            if ref.from_symbol in symbol_map:
+                                await self.db.insert_reference(
+                                    from_symbol_id=symbol_map[ref.from_symbol],
+                                    to_symbol_name=ref.to_symbol,
+                                    reference_type=ref.reference_type,
+                                    line=ref.line
+                                )
+
+                    except Exception as e:
+                        print(f"  ⚠ Errore nel parsing: {e}")
+
             print(f"✓ Indicizzato: {rel_path}")
             return True
 
@@ -345,8 +407,9 @@ class CodebaseIndexer:
         print(f"\nIndicizzazione del progetto: {self.project_root}")
         print("=" * 60)
 
-        # Carica il modello una volta sola
+        # Carica il modello e il parser una volta sola
         self.load_model()
+        self.load_parser()
 
         # Trova tutti i file
         files = self.find_files()
