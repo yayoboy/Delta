@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Optional, List
 import hashlib
 import mimetypes
+import numpy as np
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -126,6 +127,70 @@ async def list_tools() -> list[Tool]:
                 "type": "object",
                 "properties": {}
             }
+        ),
+        Tool(
+            name="search_symbols",
+            description="Cerca simboli (classi, funzioni, metodi) nel codebase per nome",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Nome o pattern del simbolo da cercare"
+                    },
+                    "kind": {
+                        "type": "string",
+                        "description": "Tipo di simbolo (opzionale): class, function, method, etc."
+                    }
+                },
+                "required": ["query"]
+            }
+        ),
+        Tool(
+            name="get_file_symbols",
+            description="Ottiene tutti i simboli (classi, funzioni) definiti in un file specifico",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Percorso relativo del file"
+                    }
+                },
+                "required": ["path"]
+            }
+        ),
+        Tool(
+            name="semantic_search",
+            description="Ricerca semantica nel codebase usando gli embedding (trova file simili per contenuto)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Descrizione di cosa cercare (es. 'gestione autenticazione utenti')"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Numero massimo di risultati (default: 10)"
+                    }
+                },
+                "required": ["query"]
+            }
+        ),
+        Tool(
+            name="get_symbol_references",
+            description="Trova tutte le referenze (chiamate, import) a un simbolo specifico",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Nome del simbolo"
+                    }
+                },
+                "required": ["symbol_name"]
+            }
         )
     ]
 
@@ -148,6 +213,20 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         return await handle_read_file(arguments["path"])
     elif name == "get_indexed_files":
         return await handle_get_indexed_files()
+    elif name == "search_symbols":
+        return await handle_search_symbols(
+            arguments["query"],
+            arguments.get("kind")
+        )
+    elif name == "get_file_symbols":
+        return await handle_get_file_symbols(arguments["path"])
+    elif name == "semantic_search":
+        return await handle_semantic_search(
+            arguments["query"],
+            arguments.get("limit", 10)
+        )
+    elif name == "get_symbol_references":
+        return await handle_get_symbol_references(arguments["symbol_name"])
     else:
         raise ValueError(f"Strumento sconosciuto: {name}")
 
@@ -252,6 +331,202 @@ async def handle_get_indexed_files() -> list[TextContent]:
             result += f" [{file['language']}]"
         if file.get('summary'):
             result += f"\n  Riassunto: {file['summary'][:100]}..."
+        result += "\n"
+
+    return [TextContent(type="text", text=result)]
+
+
+async def handle_search_symbols(query: str, kind: Optional[str] = None) -> list[TextContent]:
+    """
+    Gestisce la ricerca di simboli per nome.
+
+    Args:
+        query: Nome o pattern del simbolo
+        kind: Tipo di simbolo opzionale
+
+    Returns:
+        Lista con i risultati della ricerca
+    """
+    if not db:
+        return [TextContent(type="text", text="Errore: database non inizializzato")]
+
+    # Usa pattern SQL LIKE
+    pattern = f"%{query}%"
+    symbols = await db.search_symbols_by_name(pattern)
+
+    # Filtra per kind se specificato
+    if kind:
+        symbols = [s for s in symbols if s['kind'] == kind]
+
+    if not symbols:
+        return [TextContent(type="text", text=f"Nessun simbolo trovato per '{query}'")]
+
+    result = f"Trovati {len(symbols)} simbolo/i per '{query}':\n\n"
+    for sym in symbols:
+        result += f"**{sym['name']}** ({sym['kind']})\n"
+        result += f"  File: {sym['file_path']}:{sym['start_line']}\n"
+        if sym.get('signature'):
+            result += f"  Firma: {sym['signature']}\n"
+        if sym.get('docstring'):
+            docstring_preview = sym['docstring'][:100]
+            result += f"  Doc: {docstring_preview}...\n"
+        result += "\n"
+
+    return [TextContent(type="text", text=result)]
+
+
+async def handle_get_file_symbols(path: str) -> list[TextContent]:
+    """
+    Gestisce la richiesta di simboli di un file.
+
+    Args:
+        path: Percorso del file
+
+    Returns:
+        Lista con i simboli del file
+    """
+    if not db:
+        return [TextContent(type="text", text="Errore: database non inizializzato")]
+
+    # Ottieni file ID
+    file_id = await db.get_file_id_by_path(path)
+
+    if not file_id:
+        return [TextContent(type="text", text=f"File '{path}' non trovato nel database")]
+
+    # Ottieni simboli
+    symbols = await db.get_symbols_by_file(file_id)
+
+    if not symbols:
+        return [TextContent(type="text", text=f"Nessun simbolo trovato in '{path}'")]
+
+    result = f"Struttura di {path}:\n\n"
+
+    # Organizza per tipo
+    by_kind = {}
+    for sym in symbols:
+        kind = sym['kind']
+        if kind not in by_kind:
+            by_kind[kind] = []
+        by_kind[kind].append(sym)
+
+    for kind, syms in sorted(by_kind.items()):
+        result += f"## {kind.title()}s\n\n"
+        for sym in syms:
+            indent = "  " if sym.get('parent_id') else ""
+            result += f"{indent}- {sym['name']}"
+            if sym.get('signature'):
+                result += f"{sym['signature']}"
+            result += f" (linea {sym['start_line']})\n"
+            if sym.get('docstring'):
+                doc_preview = sym['docstring'][:80].replace('\n', ' ')
+                result += f"{indent}  └─ {doc_preview}...\n"
+        result += "\n"
+
+    return [TextContent(type="text", text=result)]
+
+
+async def handle_semantic_search(query: str, limit: int = 10) -> list[TextContent]:
+    """
+    Gestisce la ricerca semantica.
+
+    Args:
+        query: Query di ricerca
+        limit: Numero massimo di risultati
+
+    Returns:
+        Lista con i risultati della ricerca
+    """
+    if not db:
+        return [TextContent(type="text", text="Errore: database non inizializzato")]
+
+    try:
+        # Importa il modello (lazy loading)
+        from sentence_transformers import SentenceTransformer
+
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        query_embedding = model.encode(query)
+
+        # Ottieni tutti i file con embedding
+        files = await db.get_all_files()
+        results = []
+
+        for file in files:
+            file_id = file['id']
+            emb_data = await db.get_embedding(file_id)
+
+            if emb_data and emb_data.get('embedding'):
+                # Deserializza embedding
+                file_embedding = np.frombuffer(emb_data['embedding'], dtype=np.float32)
+
+                # Calcola similarità coseno
+                similarity = np.dot(query_embedding, file_embedding) / (
+                    np.linalg.norm(query_embedding) * np.linalg.norm(file_embedding)
+                )
+
+                results.append({
+                    'path': file['path'],
+                    'similarity': float(similarity),
+                    'summary': file.get('summary', ''),
+                    'language': file.get('language', 'N/A')
+                })
+
+        # Ordina per similarità
+        results.sort(key=lambda x: x['similarity'], reverse=True)
+        results = results[:limit]
+
+        if not results:
+            return [TextContent(type="text", text="Nessun risultato trovato")]
+
+        result_text = f"Risultati ricerca semantica per '{query}':\n\n"
+        for i, res in enumerate(results, 1):
+            score = res['similarity'] * 100
+            result_text += f"{i}. **{res['path']}** [{res['language']}]\n"
+            result_text += f"   Rilevanza: {score:.1f}%\n"
+            if res['summary']:
+                result_text += f"   {res['summary']}\n"
+            result_text += "\n"
+
+        return [TextContent(type="text", text=result_text)]
+
+    except Exception as e:
+        return [TextContent(type="text", text=f"Errore nella ricerca semantica: {str(e)}")]
+
+
+async def handle_get_symbol_references(symbol_name: str) -> list[TextContent]:
+    """
+    Gestisce la richiesta di referenze a un simbolo.
+
+    Args:
+        symbol_name: Nome del simbolo
+
+    Returns:
+        Lista con le referenze
+    """
+    if not db:
+        return [TextContent(type="text", text="Errore: database non inizializzato")]
+
+    # Cerca il simbolo
+    symbols = await db.search_symbols_by_name(symbol_name)
+
+    if not symbols:
+        return [TextContent(type="text", text=f"Simbolo '{symbol_name}' non trovato")]
+
+    result = f"Referenze per '{symbol_name}':\n\n"
+
+    for sym in symbols:
+        result += f"**Definizione:** {sym['file_path']}:{sym['start_line']}\n"
+
+        # Ottieni le referenze
+        references = await db.get_references_from_symbol(sym['id'])
+
+        if references:
+            result += f"\nChiamate/import ({len(references)}):\n"
+            for ref in references:
+                result += f"  - {ref['to_symbol_name']} ({ref['reference_type']}) alla linea {ref['line']}\n"
+        else:
+            result += "\nNessuna referenza trovata\n"
+
         result += "\n"
 
     return [TextContent(type="text", text=result)]
