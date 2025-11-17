@@ -47,6 +47,20 @@ Edita il file di configurazione per la tua piattaforma:
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
+**Opzione 1 - Auto-detect (semplice):**
+```json
+{
+  "mcpServers": {
+    "codebase": {
+      "command": "mcp-codebase",
+      "args": []
+    }
+  }
+}
+```
+Il server userà automaticamente la directory di lavoro corrente di Claude!
+
+**Opzione 2 - Progetto specifico:**
 ```json
 {
   "mcpServers": {
@@ -60,8 +74,6 @@ Edita il file di configurazione per la tua piattaforma:
   }
 }
 ```
-
-**Per analizzare progetti diversi:** cambia solo `MCP_PROJECT_ROOT` e riavvia Claude Desktop!
 
 **Riavvia Claude Desktop** - il server si avvia automaticamente!
 
@@ -192,7 +204,7 @@ python -m mcp_server.cli index --force
 ## Variabili d'Ambiente
 
 ```bash
-# Progetto da analizzare (richiesto)
+# Progetto da analizzare (opzionale - usa cwd se non specificato)
 export MCP_PROJECT_ROOT=/path/to/project
 
 # Database personalizzato (opzionale, default: ~/.mcp_codebase/)
@@ -202,7 +214,7 @@ export MCP_DATABASE_PATH=/custom/path/db.sqlite
 export MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2
 ```
 
-**Nota:** Configurale nel `claude_desktop_config.json`, non serve esportarle manualmente!
+**Nota:** Se `MCP_PROJECT_ROOT` non è specificato, il server usa la directory corrente!
 
 ## Sicurezza
 

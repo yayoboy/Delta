@@ -1,8 +1,36 @@
 # Configurazione Claude Desktop (Installazione Globale)
 
-## Configurazione Base
+## Configurazione Base - Auto-detect (Consigliata)
 
-Dopo aver installato con `pip install -e .`, usa questa configurazione semplice:
+Il modo più semplice: il server rileva automaticamente la directory di lavoro di Claude!
+
+```json
+{
+  "mcpServers": {
+    "codebase": {
+      "command": "mcp-codebase",
+      "args": []
+    }
+  }
+}
+```
+
+**Vantaggi:**
+- ✅ Nessuna configurazione manuale del progetto
+- ✅ Funziona automaticamente con qualsiasi progetto
+- ✅ Claude usa la directory corrente dove sta lavorando
+
+**Nota:** Assicurati di aver indicizzato il progetto prima: `mcp-index index --project /path/to/project`
+
+---
+
+## Configurazione con Progetto Fisso
+
+Se vuoi sempre analizzare un progetto specifico:
+
+## Configurazione con Progetto Fisso
+
+Se vuoi sempre analizzare un progetto specifico:
 
 ### Tutte le Piattaforme
 
