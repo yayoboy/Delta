@@ -50,10 +50,27 @@ class Database:
             )
         """)
 
-        # Indice per velocizzare le ricerche per percorso
+        # Tabella per gli embedding dei file
+        await self.db.execute("""
+            CREATE TABLE IF NOT EXISTS embeddings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_id INTEGER NOT NULL,
+                embedding BLOB NOT NULL,
+                model_name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+            )
+        """)
+
+        # Indici per velocizzare le ricerche
         await self.db.execute("""
             CREATE INDEX IF NOT EXISTS idx_files_path
             ON files(path)
+        """)
+
+        await self.db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_embeddings_file_id
+            ON embeddings(file_id)
         """)
 
         await self.db.commit()
@@ -127,3 +144,62 @@ class Database:
         """
         await self.db.execute("DELETE FROM files WHERE path = ?", (path,))
         await self.db.commit()
+
+    async def get_file_id_by_path(self, path: str) -> Optional[int]:
+        """
+        Recupera l'ID di un file per percorso.
+
+        Args:
+            path: Percorso del file
+
+        Returns:
+            ID del file o None
+        """
+        async with self.db.execute(
+            "SELECT id FROM files WHERE path = ?", (path,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
+
+    async def upsert_embedding(
+        self,
+        file_id: int,
+        embedding: bytes,
+        model_name: str
+    ):
+        """
+        Inserisce o aggiorna l'embedding di un file.
+
+        Args:
+            file_id: ID del file
+            embedding: Embedding serializzato come bytes
+            model_name: Nome del modello usato
+        """
+        # Prima elimina eventuali embedding esistenti per questo file
+        await self.db.execute(
+            "DELETE FROM embeddings WHERE file_id = ?", (file_id,)
+        )
+
+        # Inserisci il nuovo embedding
+        await self.db.execute("""
+            INSERT INTO embeddings (file_id, embedding, model_name)
+            VALUES (?, ?, ?)
+        """, (file_id, embedding, model_name))
+
+        await self.db.commit()
+
+    async def get_embedding(self, file_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Recupera l'embedding di un file.
+
+        Args:
+            file_id: ID del file
+
+        Returns:
+            Dizionario con i dati dell'embedding o None
+        """
+        async with self.db.execute(
+            "SELECT * FROM embeddings WHERE file_id = ?", (file_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return dict(row) if row else None

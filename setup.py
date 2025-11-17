@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="mcp-codebase-server",
-    version="0.1.0",
+    version="0.2.0",
     author="Your Name",
     description="Server MCP per l'analisi e l'indicizzazione del codebase",
     long_description=long_description,
@@ -20,11 +20,15 @@ setup(
         "mcp>=1.0.0",
         "pydantic>=2.0.0",
         "aiosqlite>=0.19.0",
+        "sentence-transformers>=2.2.0",
+        "numpy>=1.24.0",
         "python-dotenv>=1.0.0",
+        "chardet>=5.0.0",
     ],
     entry_points={
         "console_scripts": [
             "mcp-codebase-server=mcp_server.server:main",
+            "mcp-index=mcp_server.cli:main",
         ],
     },
     classifiers=[
