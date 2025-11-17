@@ -29,8 +29,14 @@ app = Server("codebase-mcp-server")
 # Database globale
 db: Optional[Database] = None
 
-# Directory del progetto (configurabile)
-PROJECT_ROOT = os.environ.get("MCP_PROJECT_ROOT", os.getcwd())
+# Linter globale
+linter: Optional['CodeLinter'] = None
+
+# Directory del progetto - usa la directory corrente se non specificata
+PROJECT_ROOT = os.environ.get("MCP_PROJECT_ROOT")
+if not PROJECT_ROOT:
+    PROJECT_ROOT = os.getcwd()
+    print(f"MCP_PROJECT_ROOT non specificato, uso directory corrente: {PROJECT_ROOT}", file=sys.stderr)
 
 
 def is_text_file(file_path: str) -> bool:
