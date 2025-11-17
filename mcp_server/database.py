@@ -11,13 +11,20 @@ from typing import Optional, List, Dict, Any
 class Database:
     """Gestisce la connessione e le operazioni sul database SQLite."""
 
-    def __init__(self, db_path: str = "mcp_data/codebase.db"):
+    def __init__(self, db_path: str = None):
         """
         Inizializza il database.
 
         Args:
-            db_path: Percorso del file database SQLite
+            db_path: Percorso del file database SQLite (default: ~/.mcp_codebase/db.sqlite)
         """
+        if db_path is None:
+            # Usa directory home per database globale
+            home = os.path.expanduser("~")
+            db_dir = os.path.join(home, ".mcp_codebase")
+            os.makedirs(db_dir, exist_ok=True)
+            db_path = os.path.join(db_dir, "codebase.db")
+
         self.db_path = db_path
         self.db: Optional[aiosqlite.Connection] = None
 

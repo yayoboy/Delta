@@ -1,66 +1,144 @@
-# Esempio configurazione Claude Desktop
+# Configurazione Claude Desktop (Installazione Globale)
 
-## macOS/Linux
+## Configurazione Base
+
+Dopo aver installato con `pip install -e .`, usa questa configurazione semplice:
+
+### Tutte le Piattaforme
 
 ```json
 {
   "mcpServers": {
     "codebase": {
-      "command": "/Users/tuonome/Delta/venv/bin/python",
-      "args": ["-m", "mcp_server"],
+      "command": "mcp-codebase",
+      "args": [],
       "env": {
-        "MCP_PROJECT_ROOT": "/Users/tuonome/progetti/mio-progetto"
+        "MCP_PROJECT_ROOT": "/path/to/your/project"
       }
     }
   }
 }
 ```
 
-## Windows
+## Esempi Specifici per Piattaforma
+
+### macOS
+
+File: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "codebase": {
-      "command": "C:\\Users\\TuoNome\\Delta\\venv\\Scripts\\python.exe",
-      "args": ["-m", "mcp_server"],
+      "command": "mcp-codebase",
+      "args": [],
       "env": {
-        "MCP_PROJECT_ROOT": "C:\\Users\\TuoNome\\progetti\\mio-progetto"
+        "MCP_PROJECT_ROOT": "/Users/tuonome/progetti/mio-app"
       }
     }
   }
 }
 ```
 
-## Note Importanti
+### Linux
 
-1. **Path assoluti:** Usa sempre path completi, non relativi
-2. **Venv Python:** Punta al Python dentro il virtualenv, non quello di sistema
-3. **Separatori:** Su Windows usa `\\` o `/`, su Mac/Linux usa `/`
-4. **MCP_PROJECT_ROOT:** Percorso del progetto che vuoi analizzare
-5. **Riavvio:** Riavvia Claude Desktop dopo ogni modifica del config
+File: `~/.config/Claude/claude_desktop_config.json`
 
-## Come Trovare il Path Python del Venv
-
-### macOS/Linux
-```bash
-cd Delta
-source venv/bin/activate
-which python
-# Copia questo path nel config
+```json
+{
+  "mcpServers": {
+    "codebase": {
+      "command": "mcp-codebase",
+      "args": [],
+      "env": {
+        "MCP_PROJECT_ROOT": "/home/tuonome/progetti/mio-app"
+      }
+    }
+  }
+}
 ```
 
 ### Windows
-```cmd
-cd Delta
-venv\Scripts\activate
-where python
-REM Copia questo path nel config
+
+File: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "codebase": {
+      "command": "mcp-codebase",
+      "args": [],
+      "env": {
+        "MCP_PROJECT_ROOT": "C:/Users/TuoNome/progetti/mio-app"
+      }
+    }
+  }
+}
 ```
 
-## Verifica Configurazione
+**Nota Windows:** Usa `/` invece di `\\` nei path, funziona meglio.
 
-1. Apri Claude Desktop
-2. Controlla i log: Help → View Logs
-3. Cerca righe tipo: "Connected to MCP server: codebase"
-4. Se vedi errori, verifica i path nel config
+## Analizzare Progetti Multipli
+
+### Opzione 1: Cambiare MCP_PROJECT_ROOT
+
+1. Edita `claude_desktop_config.json`
+2. Cambia solo `MCP_PROJECT_ROOT`
+3. Riavvia Claude Desktop
+
+### Opzione 2: Server Multipli (Avanzato)
+
+```json
+{
+  "mcpServers": {
+    "progetto-A": {
+      "command": "mcp-codebase",
+      "env": {
+        "MCP_PROJECT_ROOT": "/path/to/progetto-A"
+      }
+    },
+    "progetto-B": {
+      "command": "mcp-codebase",
+      "env": {
+        "MCP_PROJECT_ROOT": "/path/to/progetto-B"
+      }
+    }
+  }
+}
+```
+
+Claude avrà accesso a entrambi i progetti contemporaneamente!
+
+## Verifica Installazione
+
+```bash
+# Verifica che il comando sia disponibile
+which mcp-codebase
+# Output: /usr/local/bin/mcp-codebase (o simile)
+
+# Testa la CLI
+mcp-index --help
+
+# Indicizza un progetto
+mcp-index index --project /path/to/project
+```
+
+## Troubleshooting
+
+**Comando non trovato:**
+```bash
+pip show mcp-codebase-server
+pip install -e /path/to/Delta
+```
+
+**Log Claude Desktop:**
+- macOS/Linux: Help → View Logs
+- Windows: Help → View Logs
+- Cerca "codebase" o errori MCP
+
+**Test manuale:**
+```bash
+export MCP_PROJECT_ROOT=/path/to/project
+mcp-codebase
+# Dovrebbe avviarsi senza errori
+```

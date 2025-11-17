@@ -13,21 +13,33 @@ Server MCP che permette a Claude di analizzare, indicizzare e navigare il tuo co
 
 ## Quick Start
 
+### Installazione Globale (una volta sola)
+
 ```bash
-# 1. Installa dipendenze
+# 1. Clona e installa il server MCP globalmente
 git clone <repo>
 cd Delta
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 
-# 2. Indicizza il tuo progetto
-python -m mcp_server.cli index --project /path/to/your/project
-
-# 3. Configura Claude Desktop (vedi sotto)
-# 4. Riavvia Claude Desktop - il server MCP si avvierà automaticamente!
+# Verifica installazione
+which mcp-codebase  # Dovrebbe mostrare il path del comando
+mcp-index --help    # Mostra help della CLI
 ```
 
-## Configurazione Claude Desktop
+### Uso con Qualsiasi Progetto
+
+```bash
+# Indicizza il progetto che vuoi analizzare
+mcp-index index --project /path/to/your/project
+
+# Statistiche
+mcp-index stats
+
+# Elenca file indicizzati
+mcp-index list
+```
+
+### Configurazione Claude Desktop (una volta sola)
 
 Edita il file di configurazione per la tua piattaforma:
 
@@ -35,14 +47,12 @@ Edita il file di configurazione per la tua piattaforma:
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-Aggiungi questa configurazione (usa il **path assoluto** del tuo venv Python):
-
 ```json
 {
   "mcpServers": {
     "codebase": {
-      "command": "/path/to/Delta/venv/bin/python",
-      "args": ["-m", "mcp_server"],
+      "command": "mcp-codebase",
+      "args": [],
       "env": {
         "MCP_PROJECT_ROOT": "/path/to/your/project"
       }
@@ -51,9 +61,9 @@ Aggiungi questa configurazione (usa il **path assoluto** del tuo venv Python):
 }
 ```
 
-**Importante:** Usa il path completo al Python del venv (es. `/Users/nome/Delta/venv/bin/python`)
+**Per analizzare progetti diversi:** cambia solo `MCP_PROJECT_ROOT` e riavvia Claude Desktop!
 
-**Riavvia Claude Desktop** - il server si avvia automaticamente, non serve eseguirlo manualmente!
+**Riavvia Claude Desktop** - il server si avvia automaticamente!
 
 ## Strumenti MCP Disponibili
 
@@ -91,20 +101,23 @@ User: Mostrami la struttura di server.py
 
 ## CLI Commands
 
-**Nota:** Usa la CLI solo per gestire l'indice. Il server MCP si avvia automaticamente con Claude Desktop.
+Dopo l'installazione globale, usa i comandi `mcp-index`:
 
 ```bash
 # Indicizza progetto
-python -m mcp_server.cli index [--project PATH] [--force]
+mcp-index index --project /path/to/project [--force]
 
-# Statistiche
-python -m mcp_server.cli stats
+# Cambia progetto
+mcp-index index --project /path/to/altro-progetto
+
+# Statistiche database corrente
+mcp-index stats
 
 # Elenca file indicizzati
-python -m mcp_server.cli list [--language Python] [-v]
+mcp-index list [--language Python] [-v]
 ```
 
-**Non serve avviare manualmente `python -m mcp_server`** - Claude Desktop lo fa automaticamente!
+**Il database viene creato in:** `~/.mcp_codebase/` (un database per progetto)
 
 ## Architettura
 
@@ -149,23 +162,22 @@ npm install -g eslint prettier
 
 ## Troubleshooting
 
+**Comando mcp-codebase non trovato:**
+```bash
+pip install -e .          # Reinstalla
+pip show mcp-codebase-server  # Verifica installazione
+```
+
 **Claude non vede il server MCP:**
-- Verifica che il path Python nel config sia corretto (usa path assoluto al venv)
-- Controlla i log di Claude Desktop (menu Help → View Logs)
-- Assicurati di aver riavviato Claude Desktop dopo la modifica del config
+- Usa semplicemente `"command": "mcp-codebase"` nel config
+- Verifica che `which mcp-codebase` mostri il comando
+- Controlla i log: Help → View Logs in Claude Desktop
+- Riavvia Claude Desktop dopo modifiche al config
 
-**Server non si avvia:**
-```bash
-python --version  # Verifica Python 3.10+
-pip list          # Verifica dipendenze installate
-```
-
-**Test manuale del server (opzionale):**
-```bash
-# Solo per debug - normalmente Claude Desktop lo avvia automaticamente
-export MCP_PROJECT_ROOT=/path/to/project
-python -m mcp_server
-```
+**Cambiare progetto da analizzare:**
+1. Cambia `MCP_PROJECT_ROOT` nel config di Claude Desktop
+2. Esegui `mcp-index index --project /nuovo/progetto`
+3. Riavvia Claude Desktop
 
 **Tree-sitter errori:**
 ```bash
@@ -180,10 +192,17 @@ python -m mcp_server.cli index --force
 ## Variabili d'Ambiente
 
 ```bash
-export MCP_PROJECT_ROOT=/path/to/project              # (richiesto)
-export MCP_DATABASE_PATH=mcp_data/codebase.db        # (opzionale)
-export MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2          # (opzionale)
+# Progetto da analizzare (richiesto)
+export MCP_PROJECT_ROOT=/path/to/project
+
+# Database personalizzato (opzionale, default: ~/.mcp_codebase/)
+export MCP_DATABASE_PATH=/custom/path/db.sqlite
+
+# Modello embedding (opzionale, default: all-MiniLM-L6-v2)
+export MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2
 ```
+
+**Nota:** Configurale nel `claude_desktop_config.json`, non serve esportarle manualmente!
 
 ## Sicurezza
 
