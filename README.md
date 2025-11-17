@@ -14,31 +14,34 @@ Server MCP che permette a Claude di analizzare, indicizzare e navigare il tuo co
 ## Quick Start
 
 ```bash
-# 1. Installa
+# 1. Installa dipendenze
 git clone <repo>
 cd Delta
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
-# 2. Indicizza progetto
-python -m mcp_server.cli index --project /path/to/project
+# 2. Indicizza il tuo progetto
+python -m mcp_server.cli index --project /path/to/your/project
 
-# 3. Avvia server MCP
-export MCP_PROJECT_ROOT=/path/to/project
-python -m mcp_server
+# 3. Configura Claude Desktop (vedi sotto)
+# 4. Riavvia Claude Desktop - il server MCP si avvierà automaticamente!
 ```
 
 ## Configurazione Claude Desktop
+
+Edita il file di configurazione per la tua piattaforma:
 
 **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
+Aggiungi questa configurazione (usa il **path assoluto** del tuo venv Python):
+
 ```json
 {
   "mcpServers": {
     "codebase": {
-      "command": "python",
+      "command": "/path/to/Delta/venv/bin/python",
       "args": ["-m", "mcp_server"],
       "env": {
         "MCP_PROJECT_ROOT": "/path/to/your/project"
@@ -48,7 +51,9 @@ python -m mcp_server
 }
 ```
 
-Riavvia Claude Desktop.
+**Importante:** Usa il path completo al Python del venv (es. `/Users/nome/Delta/venv/bin/python`)
+
+**Riavvia Claude Desktop** - il server si avvia automaticamente, non serve eseguirlo manualmente!
 
 ## Strumenti MCP Disponibili
 
@@ -86,6 +91,8 @@ User: Mostrami la struttura di server.py
 
 ## CLI Commands
 
+**Nota:** Usa la CLI solo per gestire l'indice. Il server MCP si avvia automaticamente con Claude Desktop.
+
 ```bash
 # Indicizza progetto
 python -m mcp_server.cli index [--project PATH] [--force]
@@ -96,6 +103,8 @@ python -m mcp_server.cli stats
 # Elenca file indicizzati
 python -m mcp_server.cli list [--language Python] [-v]
 ```
+
+**Non serve avviare manualmente `python -m mcp_server`** - Claude Desktop lo fa automaticamente!
 
 ## Architettura
 
@@ -140,10 +149,22 @@ npm install -g eslint prettier
 
 ## Troubleshooting
 
+**Claude non vede il server MCP:**
+- Verifica che il path Python nel config sia corretto (usa path assoluto al venv)
+- Controlla i log di Claude Desktop (menu Help → View Logs)
+- Assicurati di aver riavviato Claude Desktop dopo la modifica del config
+
 **Server non si avvia:**
 ```bash
 python --version  # Verifica Python 3.10+
-pip list          # Verifica dipendenze
+pip list          # Verifica dipendenze installate
+```
+
+**Test manuale del server (opzionale):**
+```bash
+# Solo per debug - normalmente Claude Desktop lo avvia automaticamente
+export MCP_PROJECT_ROOT=/path/to/project
+python -m mcp_server
 ```
 
 **Tree-sitter errori:**
