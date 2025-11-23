@@ -1,0 +1,108 @@
+{
+  "manifest_version": "0.3",
+  "name": "codebase-analyzer",
+  "display_name": "Codebase Analyzer",
+  "version": "1.0.0",
+  "description": "Analizza codebase con indicizzazione, ricerca semantica, parsing AST e linting statico",
+  "long_description": "Un'estensione MCP completa per l'analisi del codice che offre:\n\n- **Indicizzazione intelligente** con hash tracking per aggiornamenti incrementali\n- **Ricerca semantica** con embeddings sentence-transformers\n- **Parsing AST** con tree-sitter per 9 linguaggi\n- **Analisi statica** con Ruff, mypy, pylint ed ESLint\n- **Cambio progetto dinamico** senza riavvio del server",
+  "author": {
+    "name": "Delta Project",
+    "url": "https://github.com/yayoboy/Delta"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yayoboy/Delta"
+  },
+  "license": "MIT",
+  "keywords": [
+    "codebase",
+    "analyzer",
+    "semantic-search",
+    "tree-sitter",
+    "linting",
+    "embeddings",
+    "code-analysis"
+  ],
+  "server": {
+    "type": "python",
+    "entry_point": "server/main.py",
+    "mcp_config": {
+      "command": "python",
+      "args": [
+        "${__dirname}/server/main.py"
+      ],
+      "env": {}
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.9"
+    }
+  },
+  "user_config": {
+    "project_directory": {
+      "type": "directory",
+      "title": "Directory Progetto",
+      "description": "Directory iniziale del progetto da analizzare (opzionale, può essere cambiata dinamicamente)",
+      "required": false
+    }
+  },
+  "tools": [
+    {
+      "name": "index_repository",
+      "description": "Indicizza tutti i file del repository nel database"
+    },
+    {
+      "name": "search_code",
+      "description": "Cerca codice nel repository usando ricerca semantica o testuale"
+    },
+    {
+      "name": "get_file_info",
+      "description": "Ottieni informazioni dettagliate su un file specifico"
+    },
+    {
+      "name": "list_symbols",
+      "description": "Lista tutti i simboli (funzioni, classi, metodi) nel repository"
+    },
+    {
+      "name": "get_symbol_details",
+      "description": "Ottieni dettagli completi su un simbolo specifico"
+    },
+    {
+      "name": "find_references",
+      "description": "Trova tutte le referenze a un simbolo"
+    },
+    {
+      "name": "get_file_structure",
+      "description": "Ottieni la struttura gerarchica di un file"
+    },
+    {
+      "name": "get_repository_stats",
+      "description": "Ottieni statistiche generali sul repository"
+    },
+    {
+      "name": "run_linter",
+      "description": "Esegui analisi statica sul codice"
+    },
+    {
+      "name": "get_code_quality_report",
+      "description": "Genera un report completo sulla qualità del codice"
+    },
+    {
+      "name": "set_project_directory",
+      "description": "Imposta il progetto su cui lavorare dinamicamente"
+    },
+    {
+      "name": "get_current_project",
+      "description": "Mostra il progetto corrente su cui si sta lavorando"
+    }
+  ],
+  "tools_generated": false,
+  "prompts": [],
+  "prompts_generated": false
+}

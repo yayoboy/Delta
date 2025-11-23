@@ -15,11 +15,11 @@ import asyncio
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from .database import Database
-from .server import is_text_file, calculate_file_hash
+from database import Database
+from server import is_text_file, calculate_file_hash
 
 try:
-    from .parser import CodeParser
+    from parser import CodeParser
     PARSER_AVAILABLE = True
 except ImportError:
     PARSER_AVAILABLE = False

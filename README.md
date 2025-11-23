@@ -1,53 +1,54 @@
-# MCP Server per Analisi del Codebase
+# Codebase Analyzer - Claude Desktop Extension
 
-Server MCP che permette a Claude di analizzare, indicizzare e navigare il tuo codebase.
+Estensione Claude Desktop per analizzare, indicizzare e navigare il codebase con ricerca semantica e parsing AST.
 
 ## Caratteristiche
 
-✅ **10 Strumenti MCP** - Ricerca simboli, analisi semantica, linting
-✅ **9 Linguaggi** - Python, JS/TS, Java, C/C++, Go, Rust + altri
-✅ **Ricerca Semantica** - Embedding AI con sentence-transformers
-✅ **Analisi Statica** - Ruff, mypy, pylint, ESLint
-✅ **Database Indicizzato** - SQLite con simboli, embedding, relazioni
-✅ **Aggiornamenti Incrementali** - Solo file modificati vengono re-indicizzati
+- **12 Strumenti MCP** - Ricerca simboli, analisi semantica, linting, cambio progetto dinamico
+- **9 Linguaggi** - Python, JS/TS, Java, C/C++, Go, Rust, Ruby
+- **Ricerca Semantica** - Embedding AI con sentence-transformers
+- **Analisi Statica** - Ruff, mypy, pylint, ESLint
+- **Database Indicizzato** - SQLite con simboli, embedding, relazioni
+- **Aggiornamenti Incrementali** - Solo file modificati vengono re-indicizzati
 
-## Quick Start
+## Installazione
 
-### Installazione Globale (una volta sola)
+### Metodo 1: Desktop Extension (Consigliato)
+
+1. **Scarica** il file `.mcpb` dalla release
+2. **Doppio click** sul file
+3. **Clicca "Install"** nel dialog di Claude Desktop
+
+L'estensione si configura automaticamente!
+
+### Metodo 2: Build Manuale
 
 ```bash
-# 1. Clona e installa il server MCP globalmente
-git clone <repo>
+# Clona il repository
+git clone https://github.com/yayoboy/Delta
+cd Delta
+
+# Installa le dipendenze Python (sistema o venv)
+pip install -r requirements.txt
+
+# Crea il pacchetto .mcpb
+python build.py
+
+# Il file sarà in dist/codebase-analyzer-1.0.0.mcpb
+```
+
+### Metodo 3: Installazione Tradizionale
+
+```bash
+# Clona e installa
+git clone https://github.com/yayoboy/Delta
 cd Delta
 pip install -e .
 
-# Verifica installazione
-which mcp-codebase  # Dovrebbe mostrare il path del comando
-mcp-index --help    # Mostra help della CLI
+# Configura Claude Desktop manualmente
+# Edita: ~/Library/Application Support/Claude/claude_desktop_config.json
 ```
 
-### Uso con Qualsiasi Progetto
-
-```bash
-# Indicizza il progetto che vuoi analizzare
-mcp-index index --project /path/to/your/project
-
-# Statistiche
-mcp-index stats
-
-# Elenca file indicizzati
-mcp-index list
-```
-
-### Configurazione Claude Desktop (una volta sola)
-
-Edita il file di configurazione per la tua piattaforma:
-
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-**Linux:** `~/.config/Claude/claude_desktop_config.json`
-
-**Configurazione Minima (Consigliata):**
 ```json
 {
   "mcpServers": {
@@ -59,193 +60,139 @@ Edita il file di configurazione per la tua piattaforma:
 }
 ```
 
-**Claude cambierà progetto dinamicamente quando richiesto!**
-
-Esempio d'uso:
-```
-User: Analizza il progetto in /Users/nome/progetti/app-frontend
-Claude: [usa set_project_directory con path=/Users/nome/progetti/app-frontend]
-Claude: ✓ Progetto cambiato! Ora analizzo app-frontend...
-```
-
-**Riavvia Claude Desktop** - il server si avvia automaticamente!
-
 ## Strumenti MCP Disponibili
 
 | Strumento | Descrizione |
 |-----------|-------------|
-| `set_project_directory` | **Cambia progetto dinamicamente** - Claude sceglie su cosa lavorare |
+| `set_project_directory` | **Cambia progetto dinamicamente** |
 | `get_current_project` | Mostra progetto corrente e statistiche |
-| `list_files` | Elenca file con pattern matching |
-| `read_file` | Legge contenuto file |
-| `get_indexed_files` | Mostra file indicizzati con riassunti |
-| `search_symbols` | Cerca classi/funzioni per nome |
-| `get_file_symbols` | Struttura completa di un file |
-| `semantic_search` | Ricerca AI basata su contenuto |
-| `get_symbol_references` | Analisi dipendenze codice |
-| `lint_python` | Analisi statica Python (Ruff/mypy/pylint) |
-| `lint_javascript` | ESLint per JS/TS |
-| `get_available_linters` | Verifica tool installati |
+| `index_repository` | Indicizza tutti i file del repository |
+| `search_code` | Ricerca semantica o testuale nel codice |
+| `get_file_info` | Informazioni dettagliate su un file |
+| `list_symbols` | Lista classi, funzioni, metodi |
+| `get_symbol_details` | Dettagli completi su un simbolo |
+| `find_references` | Trova referenze a un simbolo |
+| `get_file_structure` | Struttura gerarchica di un file |
+| `get_repository_stats` | Statistiche generali del repository |
+| `run_linter` | Analisi statica del codice |
+| `get_code_quality_report` | Report completo qualità codice |
 
-## Esempi d'Uso con Claude
+## Esempi d'Uso
 
-**Cambiare progetto dinamicamente:**
+**Cambiare progetto:**
 ```
 User: Lavora sul progetto in /Users/nome/app-frontend
-→ Claude usa set_project_directory(path="/Users/nome/app-frontend")
-
-User: Quali file ci sono?
-→ Claude usa list_files()
-
-User: Ora passa al backend in /Users/nome/app-backend
-→ Claude usa set_project_directory(path="/Users/nome/app-backend")
+Claude: [usa set_project_directory(path="/Users/nome/app-frontend")]
 ```
 
-**Analisi codice:**
+**Analizzare codice:**
 ```
-User: Mostrami tutti i file Python nel progetto
-→ Claude usa list_files(pattern="*.py")
-
 User: Cerca la classe Database
-→ Claude usa search_symbols(query="Database", kind="class")
+Claude: [usa list_symbols(kind="class", query="Database")]
 
 User: Trova file che gestiscono autenticazione
-→ Claude usa semantic_search(query="authentication and login")
+Claude: [usa search_code(query="authentication and login", semantic=true)]
 
 User: Analizza il codice per errori
-→ Claude usa lint_python()
+Claude: [usa run_linter(tool="ruff")]
 ```
 
-## CLI Commands
-
-Dopo l'installazione globale, usa i comandi `mcp-index`:
+## Build del Pacchetto
 
 ```bash
-# Indicizza progetto
-mcp-index index --project /path/to/project [--force]
+# Build standard
+python build.py
 
-# Cambia progetto
-mcp-index index --project /path/to/altro-progetto
+# Con nome personalizzato
+python build.py --output my-extension
 
-# Statistiche database corrente
-mcp-index stats
-
-# Elenca file indicizzati
-mcp-index list [--language Python] [-v]
+# Con dipendenze bundle (file più grande)
+python build.py --with-deps
 ```
 
-**Il database viene creato in:** `~/.mcp_codebase/` (un database per progetto)
+Il pacchetto `.mcpb` viene creato in `dist/`.
 
-## Architettura
+## Struttura Progetto
 
 ```
-mcp_server/
-├── server.py      # Server MCP principale (10 strumenti)
-├── database.py    # SQLite (4 tabelle: files, embeddings, symbols, references)
-├── indexer.py     # Scansione e indicizzazione con embedding
-├── parser.py      # Parsing tree-sitter per 9 linguaggi
-├── linters.py     # Integrazione Ruff, mypy, pylint, ESLint
-└── cli.py         # Comandi CLI
+Delta/
+├── manifest.json      # Configurazione estensione MCPB
+├── build.py          # Script per creare .mcpb
+├── icon.svg          # Icona estensione
+├── requirements.txt  # Dipendenze Python
+├── server/
+│   ├── main.py       # Entry point
+│   ├── server.py     # Server MCP (12 strumenti)
+│   ├── database.py   # SQLite (4 tabelle)
+│   ├── indexer.py    # Indicizzazione con embedding
+│   ├── parser.py     # Parsing tree-sitter
+│   ├── linters.py    # Integrazione linter
+│   └── cli.py        # Comandi CLI
+└── README.md
 ```
-
-### Database Schema
-
-- **files**: path, hash, summary, language, file_size
-- **embeddings**: file_id, embedding (BLOB), model_name
-- **symbols**: name, kind, line, docstring, signature, parent_id
-- **references**: from_symbol_id, to_symbol_name, reference_type, line
 
 ## Linguaggi Supportati
 
 **Parsing completo:** Python, JavaScript, TypeScript, Java, C, C++, Go, Rust, Ruby
+
 **Rilevamento:** +20 linguaggi (PHP, Swift, Kotlin, Scala, HTML, CSS, SQL, Shell, etc.)
 
-## Strumenti Opzionali
+## Requisiti
 
+- Python >= 3.9
+- Claude Desktop >= 1.0.0
+
+**Dipendenze Python:**
+- mcp >= 1.0.0
+- sentence-transformers >= 2.2.0
+- tree-sitter >= 0.20.0
+- aiosqlite >= 0.19.0
+- numpy >= 1.24.0
+
+**Strumenti Opzionali per Linting:**
 ```bash
-# Python linting
-pip install ruff mypy pylint
-
-# JavaScript linting
-npm install -g eslint prettier
+pip install ruff mypy pylint          # Python
+npm install -g eslint prettier        # JavaScript/TypeScript
 ```
 
-## Performance
+## Piattaforme
 
-| Progetto | Indicizzazione | search_symbols | semantic_search |
-|----------|----------------|----------------|-----------------|
-| <100 file | 10-30s | <100ms | 500ms-2s |
-| >1000 file | 5-10min | <500ms | 3-10s |
+- macOS
+- Windows
+- Linux
 
 ## Troubleshooting
 
-**Comando mcp-codebase non trovato:**
-```bash
-pip install -e .          # Reinstalla
-pip show mcp-codebase-server  # Verifica installazione
-```
+**Estensione non si installa:**
+- Verifica che Claude Desktop sia aggiornato
+- Controlla che Python >= 3.9 sia installato
 
-**Claude non vede il server MCP:**
-- Usa semplicemente `"command": "mcp-codebase"` nel config
-- Verifica che `which mcp-codebase` mostri il comando
+**Server non risponde:**
 - Controlla i log: Help → View Logs in Claude Desktop
-- Riavvia Claude Desktop dopo modifiche al config
-
-**Cambiare progetto da analizzare:**
-1. Cambia `MCP_PROJECT_ROOT` nel config di Claude Desktop
-2. Esegui `mcp-index index --project /nuovo/progetto`
-3. Riavvia Claude Desktop
+- Verifica le dipendenze: `pip install -r requirements.txt`
 
 **Tree-sitter errori:**
 ```bash
 pip install --force-reinstall tree-sitter-python tree-sitter-javascript
 ```
 
-**Database vuoto:**
-```bash
-python -m mcp_server.cli index --force
-```
+## Performance
 
-## Variabili d'Ambiente
-
-**Nessuna configurazione richiesta!** Claude cambia progetto dinamicamente.
-
-Opzionali per configurazione manuale:
-```bash
-# Database personalizzato (opzionale, default: ~/.mcp_codebase/)
-export MCP_DATABASE_PATH=/custom/path/db.sqlite
-
-# Modello embedding (opzionale, default: all-MiniLM-L6-v2)
-export MCP_EMBEDDING_MODEL=all-MiniLM-L6-v2
-```
+| Progetto | Indicizzazione | Ricerca simboli | Ricerca semantica |
+|----------|----------------|-----------------|-------------------|
+| <100 file | 10-30s | <100ms | 500ms-2s |
+| >1000 file | 5-10min | <500ms | 3-10s |
 
 ## Sicurezza
 
-- ✅ Sandbox: accesso limitato a `MCP_PROJECT_ROOT`
-- ✅ Path validation: nessun path traversal
-- ✅ SQL injection: query parametrizzate
-- ✅ File binari esclusi automaticamente
-
-## Limitazioni
-
-- File >1MB non indicizzati (performance)
-- Solo file di testo supportati
-- Ricerca semantica può essere lenta su progetti enormi (>10k file)
-
-## Implementazione (8 Fasi)
-
-✅ **Fase 1:** Server MCP base con database SQLite
-✅ **Fase 2:** Indicizzatore con embedding e hash
-✅ **Fase 3:** Parsing tree-sitter per simboli
-✅ **Fase 4:** Interfaccia MCP avanzata (10 strumenti)
-✅ **Fase 5:** Ottimizzazioni incrementali
-✅ **Fase 6:** Analisi statica (Ruff, mypy, ESLint)
-✅ **Fase 7:** Integrazione Claude Desktop
-✅ **Fase 8:** Documentazione completa
+- Sandbox: accesso limitato alla directory progetto
+- Path validation: nessun path traversal
+- SQL injection: query parametrizzate
+- File binari esclusi automaticamente
 
 ## Versione
 
-**0.6.0** - Progetto completo e production-ready
+**1.0.0** - Prima release come Desktop Extension
 
 ## License
 

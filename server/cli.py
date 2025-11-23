@@ -8,8 +8,8 @@ import argparse
 import os
 import sys
 
-from .database import Database
-from .indexer import CodebaseIndexer
+from database import Database
+from indexer import CodebaseIndexer
 
 
 async def cmd_index(args):
